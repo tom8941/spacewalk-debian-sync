@@ -26,6 +26,7 @@ dpkg-query -f '${binary:Package}\n' -W
 #for available package
 apt-cache pkgnames
 ```
+You can modify this list manually or to have it from another source if needed. Don't forget that the filter is performed by a simple match of grep between the package names of this file and the one contained in Packages.gz of the repository.
 ...
 
 ## External Source
