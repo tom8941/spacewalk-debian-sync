@@ -13,6 +13,7 @@
 # 20130204 - Initial release
 # 20130215 - Fix for downloading security repository
 # 20130216 - Fix for downloading from snapshot.debian.org
+# 20160902 - Add packagelist function (Added by tom8941)
 #
 # Here are some sample URLs:
 #
@@ -41,7 +42,7 @@ use WWW::Mechanize;
 $| = 1;
 
 my $debug = 0;
-my ($getopt, $url, $channel, $username, $password, $debianroot);
+my ($getopt, $url, $channel, $username, $password, $debianroot, $packagelist);
 my $mech;
 my ($packages, $package);
 my ($pkgname, $fileurl, $md5, $sha1, $sha256);
@@ -50,11 +51,12 @@ my (%inrepo, %inchannel);
 my ($synced, $tosync);
 my %download;
 
-$getopt = GetOptions( 'url=s'  		=> \$url,
-                      'channel=s'	=> \$channel,
-		      'username=s'	=> \$username,
-		      'password=s'	=> \$password
-		    );
+$getopt = GetOptions( 'url=s'           => \$url,
+                      'channel=s'       => \$channel,
+                      'packagelist=s'   => \$packagelist,
+                      'username=s'      => \$username,
+                      'password=s'      => \$password
+                    );
 
 # Ubuntu mirrors store data under /ubuntu/
 if ($url =~ /(.*ubuntu\/)/) {
@@ -68,12 +70,12 @@ if ($url =~ /(.*debian\/)/) {
   $debianroot = $1;
   &info("Repo URL: $url\n");
   &info("Debian root is $debianroot\n");
-} 
+}
 
 # security.debian.org has no /debian/ directory
 if ($url =~ /security\.debian\.org\//) {
   $debianroot = "http://security.debian.org/";
-  &info("Repo URL: $url\n");  
+  &info("Repo URL: $url\n");
   &info("Debian root is $debianroot\n");
 }
 
@@ -131,26 +133,59 @@ $packages = Compress::Zlib::memGunzip($mech->content())
 # Parse uncompressed Packages.gz
 $tosync = 0;
 $synced = 0;
+
+my $filtered = 0;
+my @array;
+my @match;
+
+if (defined($packagelist)) {
+    open FILE, "$packagelist" or die "can't open $packagelist : $!";
+    @array = <FILE>;
+    close (FILE);
+    $filtered = 1;
+}
+
 foreach $package (split(/\n\n/, $packages)) {
   foreach $_ (split(/\n/, $package)) {
+    if (/^Package: (.*)$/)   { $pkgname = $1; };
     if (/^Filename: (.*)$/) { $fileurl = $1; };
     if (/^MD5sum: (.*)$/)   { $md5     = $1; };
     if (/^SHA1: (.*)$/)     { $sha1    = $1; };
     if (/^SHA256: (.*)$/)   { $sha256  = $1; };
-  }
-  $inrepo{basename($fileurl)} = $fileurl;
-  &debug("Package ".basename($fileurl)." at $fileurl\n");
+    }
+  if ($filtered != 1) {
+      $inrepo{basename($fileurl)} = $fileurl;
+      &debug("Package ".basename($fileurl)." at $fileurl\n");
 
-  if ( (not(defined($inchannel{$md5}))) &&
-       (not(defined($inchannel{$sha1}))) &&
-       (not(defined($inchannel{$sha256}))) ) {
-    $download{basename($fileurl)} = $fileurl;
-    $tosync++;
-    &debug(basename($fileurl)." needs to be synced\n");
-  } else {
-    $synced++;
-  }
+      if ( (not(defined($inchannel{$md5}))) &&
+           (not(defined($inchannel{$sha1}))) &&
+           (not(defined($inchannel{$sha256}))) ) {
+        $download{basename($fileurl)} = $fileurl;
+        $tosync++;
+        &debug(basename($fileurl)." needs to be synced\n");
+      } else {
+        $synced++;
+      }
+   }
+   else {
+     @match = grep{/$pkgname/}@array;
+     if(@match) {
+          $inrepo{basename($fileurl)} = $fileurl;
+          &debug("Package ".basename($fileurl)." at $fileurl\n");
+
+          if ( (not(defined($inchannel{$md5}))) &&
+               (not(defined($inchannel{$sha1}))) &&
+               (not(defined($inchannel{$sha256}))) ) {
+            $download{basename($fileurl)} = $fileurl;
+            $tosync++;
+            &debug(basename($fileurl)." needs to be synced\n");
+          } else {
+            $synced++;
+          }
+     }
+   }
 }
+
 &info("Packages in repo:\t\t".scalar(keys %inrepo)."\n");
 &info("Packages already synced:\t$synced\n");
 &info("Packages to sync:\t\t$tosync\n");
@@ -160,7 +195,7 @@ $synced = 0;
 foreach $_ (keys %download) {
   $synced++;
   &info("$synced/$tosync : $_\n");
- 
+
   $mech->get("$debianroot/$download{$_}", ':content_file' => "/tmp/$_");
   if ($mech->success) {
     system("rhnpush -c $channel -u $username -p $password /tmp/$_");
