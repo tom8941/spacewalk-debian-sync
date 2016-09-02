@@ -168,7 +168,7 @@ foreach $package (split(/\n\n/, $packages)) {
       }
    }
    else {
-     @match = grep{/$pkgname/}@array;
+     @match = grep{/^$pkgname\n$/}@array;
      if(@match) {
           $inrepo{basename($fileurl)} = $fileurl;
           &debug("Package ".basename($fileurl)." at $fileurl\n");
