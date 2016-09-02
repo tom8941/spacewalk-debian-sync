@@ -16,7 +16,7 @@ ex:
 ```
 spacewalk-debian-sync.pl --url 'ftp://ftp.fr.debian.org/debian/dists/Debian7.11/main/binary-amd64/' --channel wheezychannel --username spaceuser --password spacepassword --packagelist /opt/packagelist
 ```
-You can optain a package list by using the command : 
+You can obtain a package list by using the command : 
 
 ```
 #for installed package
