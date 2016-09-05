@@ -8,7 +8,7 @@ An improvised repo-sync to bring Debian packages into Spacewalk
 ```
 spacewalk-debian-sync.pl --url [url of the repo] --channel [name of the channel on spacewalk] --username [spacewalk user] --password [spacewalk password] --packagelist [filepath of package list] --proxy [proxy url]
 ```
---proxy and --packagelist are optional
+--proxy and --packagelist are optionals.
 
 The package list should have 1 package per line.
 
