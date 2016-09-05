@@ -15,7 +15,7 @@
 # 20130216 - Fix for downloading from snapshot.debian.org
 # 
 # 20160902 - Add packagelist function (Added by tom8941)
-# 20160902 - Add proxy function (Added by tom8941)
+# 20160905 - Add proxy function (Added by tom8941)
 #
 # Here are some sample URLs:
 #
