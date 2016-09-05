@@ -15,6 +15,7 @@
 # 20130216 - Fix for downloading from snapshot.debian.org
 # 
 # 20160902 - Add packagelist function (Added by tom8941)
+# 20160902 - Add proxy function (Added by tom8941)
 #
 # Here are some sample URLs:
 #
@@ -43,7 +44,7 @@ use WWW::Mechanize;
 $| = 1;
 
 my $debug = 0;
-my ($getopt, $url, $channel, $username, $password, $debianroot, $packagelist);
+my ($getopt, $url, $channel, $username, $password, $debianroot, $packagelist, $proxy);
 my $mech;
 my ($packages, $package);
 my ($pkgname, $fileurl, $md5, $sha1, $sha256);
@@ -56,7 +57,8 @@ $getopt = GetOptions( 'url=s'           => \$url,
                       'channel=s'       => \$channel,
                       'packagelist=s'   => \$packagelist,
                       'username=s'      => \$username,
-                      'password=s'      => \$password
+                      'password=s'      => \$password,
+                      'proxy=s'         => \$proxy
                     );
 
 # Ubuntu mirrors store data under /ubuntu/
@@ -119,6 +121,11 @@ $client->call('auth.logout', $session);
 # Download Packages.gz (why does this fail on some mirrors? HTTP deflate maybe?)
 $mech = WWW::Mechanize->new;
 print "INFO: Fetching Packages.gz... ";
+
+if (defined($proxy)) {
+    $mech->proxy(['https','http','ftp'], $proxy);
+}
+
 $mech->get("$url/Packages.gz");
 print "done\n";
 
